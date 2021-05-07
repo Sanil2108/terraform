@@ -53,8 +53,8 @@ resource "aws_launch_template" "main_lt" {
 
 resource "aws_autoscaling_group" "test" {
   name               = "test"
-  min_size           = 1
   max_size           = 4
+  min_size           = 1
   desired_capacity   = 2
   availability_zones = ["ap-south-1b"]
 
@@ -77,10 +77,10 @@ resource "aws_ecs_capacity_provider" "test_provider" {
     auto_scaling_group_arn = aws_autoscaling_group.test.arn
 
     managed_scaling {
-      maximum_scaling_step_size = 1000
-      minimum_scaling_step_size = 1
       status                    = "ENABLED"
       target_capacity           = 10
+      maximum_scaling_step_size = 1000
+      minimum_scaling_step_size = 1
     }
   }
 }
