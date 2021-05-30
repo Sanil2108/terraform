@@ -25,7 +25,7 @@ resource "aws_s3_bucket" "output_bucket" {
           "s3:PutObject"
         ],
         "Effect": "Allow",
-        "Resource": "arn:aws:s3:::sanil-khurana-image-filters-output-bucket",
+        "Resource": "arn:aws:s3:::sanil-khurana-image-filters-output-bucket/*",
         "Principal": "*"
       }
     ]
@@ -161,4 +161,69 @@ resource "aws_lambda_function" "bw_function" {
 resource "aws_lambda_event_source_mapping" "bw_function_event_source" {
   event_source_arn = aws_sqs_queue.bw_queue.arn
   function_name    = aws_lambda_function.bw_function.arn
+}
+
+
+resource "aws_sqs_queue" "contrast_queue" {
+  name = "image-filters-contrast-queue"
+  delay_seconds = 0
+  policy = jsonencode({
+    "Statement": [{
+      "Effect":"Allow",
+      "Principal": {
+        "Service": "sns.amazonaws.com"
+      },
+      "Action":"sqs:SendMessage",
+      "Resource":"arn:aws:sqs:us-east-2:123456789012:MyQueue",
+      "Condition":{
+        "ArnEquals":{
+          "aws:SourceArn":"arn:aws:sns:us-east-2:123456789012:MyTopic"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_sqs_queue_policy" "contrast_queue_policy" {
+  queue_url = aws_sqs_queue.contrast_queue.id
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Id": "sqspolicy",
+  "Statement": [
+    {
+      "Sid": "First",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "sqs:SendMessage",
+      "Resource": "${aws_sqs_queue.contrast_queue.arn}",
+      "Condition": {
+        "ArnEquals": {
+          "aws:SourceArn": "${aws_sns_topic.main_topic.arn}"
+        }
+      }
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_sns_topic_subscription" "contrast_queue_sns_subscription" {
+  protocol = "sqs"
+  topic_arn = aws_sns_topic.main_topic.arn
+  endpoint = aws_sqs_queue.contrast_queue.arn
+}
+
+resource "aws_lambda_function" "contrast_function" {
+  function_name = "image_filters_contrast_function"
+  role = aws_iam_role.iam_for_lambda.arn
+  runtime = "python3.8"
+  handler = "lambda_function.lambda_handler"
+  filename = "contrast_function.zip"
+}
+
+resource "aws_lambda_event_source_mapping" "contrast_function_event_source" {
+  event_source_arn = aws_sqs_queue.contrast_queue.arn
+  function_name    = aws_lambda_function.contrast_function.arn
 }
