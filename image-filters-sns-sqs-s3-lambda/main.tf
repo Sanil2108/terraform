@@ -15,6 +15,21 @@ provider "aws" {
 
 resource "aws_s3_bucket" "output_bucket" {
   bucket = "sanil-khurana-image-filters-output-bucket"
+  policy = jsonencode({
+    "Id": "Policy1622352070614",
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "Stmt1622352069223",
+        "Action": [
+          "s3:PutObject"
+        ],
+        "Effect": "Allow",
+        "Resource": "arn:aws:s3:::sanil-khurana-image-filters-output-bucket",
+        "Principal": "*"
+      }
+    ]
+  })
 
   tags = {
     Name = "Image Filters Output Bucket"
@@ -85,7 +100,7 @@ resource "aws_iam_role_policy_attachment" "execution_role_attachment" {
 
 
 resource "aws_sqs_queue" "bw_queue" {
-  name = "imae-filters-bw-queue"
+  name = "image-filters-bw-queue"
   delay_seconds = 0
   policy = jsonencode({
     "Statement": [{
@@ -138,7 +153,7 @@ resource "aws_sns_topic_subscription" "bw_queue_sns_subscription" {
 resource "aws_lambda_function" "bw_function" {
   function_name = "image_filters_bw_function"
   role = aws_iam_role.iam_for_lambda.arn
-  runtime = "python3.6"
+  runtime = "python3.8"
   handler = "lambda_function.lambda_handler"
   filename = "black_white_function.zip"
 }
