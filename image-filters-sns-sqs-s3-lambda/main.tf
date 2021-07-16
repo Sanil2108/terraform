@@ -226,4 +226,5 @@ resource "aws_lambda_function" "contrast_function" {
 resource "aws_lambda_event_source_mapping" "contrast_function_event_source" {
   event_source_arn = aws_sqs_queue.contrast_queue.arn
   function_name    = aws_lambda_function.contrast_function.arn
+  timeout = 10
 }
